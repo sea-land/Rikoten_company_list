@@ -1,24 +1,24 @@
 /**
  * メイン関数: シートをコピーしてリネームし、関連するシートと要約シートを更新する。
  */
-function copyAndRenameSheet() {
+function main() {
   var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   var summarySheet = spreadsheet.getSheetByName("概要");
   var companySheet = spreadsheet.getSheetByName("企業一覧");
 
   // 概要シートから必要な値を取得
-  var exhibitionName = summarySheet.getRange("C4").getValue();
-  var periodStart = summarySheet.getRange("C5").getValue();
+  var eventName = summarySheet.getRange("C4").getValue();
+  var generation = summarySheet.getRange("C5").getValue();
   var year = summarySheet.getRange("C6").getValue();
 
   // 入力値の検証
-  if (!isNumeric(periodStart) || !isNumeric(year)) {
+  if (!isNumeric(generation) || !isNumeric(year)) {
     SpreadsheetApp.getUi().alert("C5とC6には半角の数値を入力してください。");
     return;
   }
 
   // 新しいシートの情報を取得
-  var sheetInfo = getSheetInfo(exhibitionName, periodStart, year);
+  var sheetInfo = getSheetInfo(eventName, generation, year);
   if (!sheetInfo) {
     SpreadsheetApp.getUi().alert("C4の値が不正です。");
     return;
@@ -59,7 +59,7 @@ function copyAndRenameSheet() {
   var ui = SpreadsheetApp.getUi();
   var response = ui.alert(
     "シート作成確認",
-    exhibitionName + "シートを作成しますか？",
+    eventName + "シートを作成しますか？",
     ui.ButtonSet.YES_NO
   );
   if (response != ui.Button.YES) {
@@ -74,22 +74,10 @@ function copyAndRenameSheet() {
   }
 
   // 企業一覧シートを更新
-  updateCompanySheet(
-    companySheet,
-    exhibitionName,
-    periodStart,
-    year,
-    sheetInfo
-  );
+  updateCompanySheet(companySheet, eventName, generation, year, sheetInfo);
 
   // 概要シートを更新
-  updateSummarySheet(
-    summarySheet,
-    exhibitionName,
-    periodStart,
-    year,
-    sheetInfo
-  );
+  updateSummarySheet(summarySheet, eventName, generation, year, sheetInfo);
 }
 
 /**
@@ -102,19 +90,19 @@ function isNumeric(value) {
 /**
  * 新しいシートの情報を取得する関数
  */
-function getSheetInfo(exhibitionName, periodStart, year) {
-  if (exhibitionName === "理工展") {
+function getSheetInfo(eventName, generation, year) {
+  if (eventName === "理工展") {
     return {
       sheetToCopyName1: "〇期(20〇)広告",
-      newSheetName1: periodStart + "期(" + year + ")広告",
+      newSheetName1: generation + "期(" + year + ")広告",
       sheetToCopyName2: "〇期(20〇)物品",
-      newSheetName2: periodStart + "期(" + year + ")物品",
+      newSheetName2: generation + "期(" + year + ")物品",
       createSecondSheet: true,
     };
-  } else if (exhibitionName === "Welcome") {
+  } else if (eventName === "Welcome") {
     return {
       sheetToCopyName1: "〇期(20〇)Welcome広告",
-      newSheetName1: periodStart + "期(" + year + ")Welcome広告",
+      newSheetName1: generation + "期(" + year + ")Welcome広告",
       createSecondSheet: false,
     };
   }
@@ -127,8 +115,6 @@ function getSheetInfo(exhibitionName, periodStart, year) {
 function createAndRenameSheet(spreadsheet, sheetToCopy, newSheetName) {
   var newSheet = sheetToCopy.copyTo(spreadsheet);
   newSheet.setName(newSheetName);
-  newSheet.getRange("C1").setValue(newSheetName);
-  newSheet.getRange("C103").setValue(newSheetName);
   spreadsheet.setActiveSheet(newSheet);
   spreadsheet.moveActiveSheet(4);
 }
@@ -138,15 +124,13 @@ function createAndRenameSheet(spreadsheet, sheetToCopy, newSheetName) {
  */
 function updateCompanySheet(
   companySheet,
-  exhibitionName,
-  periodStart,
+  eventName,
+  generation,
   year,
   sheetInfo
 ) {
   var newSheetName =
-    exhibitionName === "理工展"
-      ? periodStart + "期(" + year + ")"
-      : "Welcome" + year;
+    eventName === "理工展" ? generation + "期(" + year + ")" : "Welcome" + year;
   var existingValue = companySheet.getRange("G1").getValue();
 
   if (existingValue !== newSheetName) {
@@ -154,7 +138,7 @@ function updateCompanySheet(
     companySheet.getRange("H1:H2").copyTo(companySheet.getRange("G1:G2"));
 
     var formula =
-      exhibitionName === "理工展"
+      eventName === "理工展"
         ? "=if(ISBLANK($D2),,IFERROR(VLOOKUP($D2,'" +
           sheetInfo.newSheetName1 +
           "'!$B:$C,2,FALSE),IFERROR(VLOOKUP($D2,'" +
@@ -182,15 +166,13 @@ function updateCompanySheet(
  */
 function updateSummarySheet(
   summarySheet,
-  exhibitionName,
-  periodStart,
+  eventName,
+  generation,
   year,
   sheetInfo
 ) {
   var newSheetName =
-    exhibitionName === "理工展"
-      ? periodStart + "期(" + year + ")"
-      : "Welcome" + year;
+    eventName === "理工展" ? generation + "期(" + year + ")" : "Welcome" + year;
   var existingValue = summarySheet.getRange("F3").getValue();
 
   if (existingValue !== newSheetName) {
